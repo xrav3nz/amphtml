@@ -17,12 +17,6 @@
 export const GTAG_CONFIG = /** @type {!JsonObject} */ ({
   'configRewriter': {
     'url': 'https://www.googletagmanager.com/gtag/amp',
-    'varGroups': {
-      'dns': {
-        'dr': 'DOCUMENT_REFERRER',
-        'dl': 'SOURCE_URL',
-      },
-    },
   },
   'vars': {
     'eventValue': '0',
@@ -110,7 +104,6 @@ export const GTAG_CONFIG = /** @type {!JsonObject} */ ({
     'awConversion': '${awConversionPrefix}${awCommonParams}',
     'awRemarketing': '${awRemarketingPrefix}${awCommonParams}',
     'flBase': 'https://ad.doubleclick.net/activity;src=${flSrc};type=${flType};cat=${flCat}',
-    'dnsBase': 'https://ad.doubleclick.net/ddm/clk/',
   },
   'transport': {
     'beacon': false,
