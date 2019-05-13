@@ -834,9 +834,7 @@ function subClass(Object, superClass, subClass) {
  * @param {!Function=} opt_ctor
  */
 export function install(win, opt_ctor) {
-  // Don't install in no-DOM environments e.g. worker.
-  const shouldInstall = win.document;
-  if (!shouldInstall || isPatched(win)) {
+  if (isPatched(win)) {
     return;
   }
 
