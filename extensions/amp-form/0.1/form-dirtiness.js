@@ -39,11 +39,11 @@ export class FormDirtiness {
     /** @private @const {!Window} */
     this.win_ = win;
 
-    /** @private {number} */
-    this.dirtyFieldCount_ = 0;
+    /** @private {!DirtyFieldNameSet} */
+    this.dirtyFieldNameSet_ = new DirtyFieldNameSet();
 
-    /** @private {!Object<string, boolean>} */
-    this.isFieldNameDirty_ = map();
+    /** @private {?FormData} */
+    this.submittedFormData_ = null;
 
     /** @private {?FormData} */
     this.submittedFormData_ = null;
@@ -79,7 +79,7 @@ export class FormDirtiness {
   onSubmitSuccess() {
     this.isSubmitting_ = false;
     this.submittedFormData_ = this.takeFormDataSnapshot_();
-    this.clearDirtyFields_();
+    this.dirtyFieldNameSet_.clear();
     this.updateDirtinessClass_();
   }
 
@@ -97,7 +97,7 @@ export class FormDirtiness {
    * @private
    */
   updateDirtinessClass_() {
-    const isDirty = this.dirtyFieldCount_ > 0 && !this.isSubmitting_;
+    const isDirty = this.dirtyFieldNameSet_.size > 0 && !this.isSubmitting_;
     this.form_.classList.toggle(DIRTINESS_INDICATOR_CLASS, isDirty);
   }
 
@@ -127,7 +127,7 @@ export class FormDirtiness {
    * @private
    */
   onReset_(unusedEvent) {
-    this.clearDirtyFields_();
+    this.dirtyFieldNameSet_.clear();
     this.updateDirtinessClass_();
   }
 
@@ -146,9 +146,9 @@ export class FormDirtiness {
       isFieldDefault(field) ||
       this.isFieldSameAsLastSubmission_(field)
     ) {
-      this.removeDirtyField_(field.name);
+      this.dirtyFieldNameSet_.delete(field.name);
     } else {
-      this.addDirtyField_(field.name);
+      this.dirtyFieldNameSet_.add(field.name);
     }
   }
 
@@ -166,14 +166,26 @@ export class FormDirtiness {
     const {name, value} = field;
     return this.submittedFormData_.get(name) === value;
   }
+}
+
+class DirtyFieldNameSet {
+  /**
+   * Creates an instance of `DirtyFieldNameSet`.
+   */
+  constructor() {
+    /** @private {number} */
+    this.dirtyFieldCount_ = 0;
+
+    /** @private {!Object<string, boolean>} */
+    this.isFieldNameDirty_ = map();
+  }
 
   /**
    * Mark the field as dirty and increase the overall dirty field count, if the
    * field is previously clean.
    * @param {string} fieldName
-   * @private
    */
-  addDirtyField_(fieldName) {
+  add(fieldName) {
     if (!this.isFieldNameDirty_[fieldName]) {
       this.isFieldNameDirty_[fieldName] = true;
       ++this.dirtyFieldCount_;
@@ -184,9 +196,8 @@ export class FormDirtiness {
    * Mark the field as clean and decrease the overall dirty field count, if the
    * field is previously dirty.
    * @param {string} fieldName
-   * @private
    */
-  removeDirtyField_(fieldName) {
+  delete(fieldName) {
     if (this.isFieldNameDirty_[fieldName]) {
       this.isFieldNameDirty_[fieldName] = false;
       --this.dirtyFieldCount_;
@@ -195,11 +206,18 @@ export class FormDirtiness {
 
   /**
    * Clears the dirty field name map and counter.
-   * @private
    */
-  clearDirtyFields_() {
+  clear() {
     this.isFieldNameDirty_ = map();
     this.dirtyFieldCount_ = 0;
+  }
+
+  /**
+   * Returns the number of dirty fields in the set.
+   * @return {number}
+   */
+  get size() {
+    return this.dirtyFieldCount_;
   }
 }
 
