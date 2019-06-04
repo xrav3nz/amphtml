@@ -188,6 +188,19 @@ describes.realWin('form-dirtiness', {}, env => {
 
       expect(form).to.have.not.class(DIRTINESS_INDICATOR_CLASS);
     });
+
+    it('tracks values changed when the form was being submitted', () => {
+      const newInput = doc.createElement('input');
+      newInput.name = 'new-input';
+      form.appendChild(newInput);
+
+      changeInput(input, 'changed');
+      dirtinessHandler.onSubmitting();
+      changeInput(newInput, 'changed');
+      dirtinessHandler.onSubmitError();
+
+      expect(dirtinessHandler.dirtyFieldNameSet_.size).to.eq(2);
+    });
   });
 
   describe('#onSubmitSuccess', () => {
@@ -208,11 +221,20 @@ describes.realWin('form-dirtiness', {}, env => {
       expect(form).to.not.have.class(DIRTINESS_INDICATOR_CLASS);
     });
 
-    it('tracks new changes after the form has been submitted', () => {
+    it('adds the dirtiness class if the form was changed after it was submitted', () => {
       changeInput(input, 'changed');
       dirtinessHandler.onSubmitting();
       dirtinessHandler.onSubmitSuccess();
       changeInput(input, 'changed again');
+
+      expect(form).to.have.class(DIRTINESS_INDICATOR_CLASS);
+    });
+
+    it('adds the dirtiness class if the form was changed while being submitted', () => {
+      changeInput(input, 'changed');
+      dirtinessHandler.onSubmitting();
+      changeInput(input, 'changed again');
+      dirtinessHandler.onSubmitSuccess();
 
       expect(form).to.have.class(DIRTINESS_INDICATOR_CLASS);
     });

@@ -45,8 +45,11 @@ export class FormDirtiness {
     /** @private {?FormData} */
     this.submittedFormData_ = null;
 
+    /** @private {?DirtyFieldNameSet} */
+    this.previousDirtyFieldNameSet_ = null;
+
     /** @private {?FormData} */
-    this.submittedFormData_ = null;
+    this.submittingFormData_ = null;
 
     /** @private {boolean} */
     this.isSubmitting_ = false;
@@ -57,29 +60,44 @@ export class FormDirtiness {
   /**
    * Processes dirtiness state when a form is being submitted. This puts the
    * form in a "submitting" state, and temporarily clears the dirtiness state.
+   * - A new `DirtyFieldNameSet` is initialized for fields that are changed
+   *   during form submission.
+   * - The `submittingFormData_` snapshot is taken.
    */
   onSubmitting() {
     this.isSubmitting_ = true;
+    this.previousDirtyFieldNameSet_ = this.dirtyFieldNameSet_;
+    this.dirtyFieldNameSet_ = new DirtyFieldNameSet();
+    this.submittingFormData_ = this.takeFormDataSnapshot_();
     this.updateDirtinessClass_();
   }
 
   /**
    * Processes dirtiness state when the form submission fails. This clears the
    * "submitting" state and reverts the form's dirtiness state.
+   * - The two `DirtyFieldNameSet`s are merged together to reflect changes made
+   *   both before and during submission.
+   * - `submittingFormData` is disregarded because the submission failed.
    */
   onSubmitError() {
     this.isSubmitting_ = false;
+
+    // Merge `dirtyFieldNameSet_` into `previousDirtyFieldNameSet_` because it
+    // is likely empty or a lot smaller
+    this.previousDirtyFieldNameSet_.merge(this.dirtyFieldNameSet_);
+    this.dirtyFieldNameSet_ = this.previousDirtyFieldNameSet_;
+
     this.updateDirtinessClass_();
   }
 
   /**
    * Processes dirtiness state when the form submission succeeds. This clears
    * the "submitting" state and the form's overall dirtiness.
+   * - `submittingFormData` becomes the new source of truth
    */
   onSubmitSuccess() {
     this.isSubmitting_ = false;
     this.submittedFormData_ = this.takeFormDataSnapshot_();
-    this.dirtyFieldNameSet_.clear();
     this.updateDirtinessClass_();
   }
 
@@ -210,6 +228,18 @@ class DirtyFieldNameSet {
   clear() {
     this.isFieldNameDirty_ = map();
     this.dirtyFieldCount_ = 0;
+  }
+
+  /**
+   * Merge the other DirtyFieldNameSet into this.
+   * @param {DirtyFieldNameSet} other
+   */
+  merge(other) {
+    for (const fieldName in other.isFieldNameDirty_) {
+      if (other.isFieldNameDirty_[fieldName]) {
+        this.add(fieldName);
+      }
+    }
   }
 
   /**
